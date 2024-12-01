@@ -1,0 +1,8 @@
+{
+    "extends": ["react-app", "plugin:prettier/recommended"],
+    "rules": {
+      "react/jsx-props-no-spreading": "off",
+      "no-console": "warn"
+    }
+  }
+  
