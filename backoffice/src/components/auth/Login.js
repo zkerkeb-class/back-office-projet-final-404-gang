@@ -15,7 +15,7 @@ function Login() {
       // Vérifier si l'utilisateur est déjà connecté
       const token = localStorage.getItem('token');
       if (token) {
-        navigate('/dashboard');
+        navigate('/');
         return;
       }
 
@@ -62,7 +62,7 @@ function Login() {
         const data = await response.json();
         // Stocker le token dans le localStorage
         localStorage.setItem('token', data.token);
-        navigate('/dashboard');
+        navigate('/');
       } else {
         const error = await response.json();
         throw new Error(error.message);
@@ -105,7 +105,10 @@ function Login() {
                 placeholder="exemple@domaine.com"
                 className="appearance-none block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 onChange={(e) =>
-                  setCredentials({ ...credentials, email: e.target.value })
+                  setCredentials({
+                    ...credentials,
+                    email: e.target.value.toLowerCase(),
+                  })
                 }
               />
             </div>
