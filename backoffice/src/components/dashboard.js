@@ -49,8 +49,8 @@ function Dashboard() {
     const fetchData = async () => {
       try {
         const [systemResponse, redisResponse] = await Promise.all([
-          fetch(`${config.test.baseUrl}api/monitor/server/resources`),
-          fetch(`${config.test.baseUrl}api/monitor/redis/stats`),
+          fetch(`${config.test.baseUrl}monitor/server/resources`),
+          fetch(`${config.test.baseUrl}monitor/redis/stats`),
         ]);
         const systemData = await systemResponse.json();
         const redisData = await redisResponse.json();
@@ -60,7 +60,7 @@ function Dashboard() {
       }
     };
     fetchData();
-    const interval = setInterval(fetchData, 5000);
+    const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -136,7 +136,6 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
       <main className="flex-1 container mx-auto px-6 py-8">
         <h2 className="text-3xl font-bold text-gray-800 mb-6">
           Bienvenue sur votre tableau de bord
