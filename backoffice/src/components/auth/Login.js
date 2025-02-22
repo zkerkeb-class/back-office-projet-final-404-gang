@@ -48,7 +48,7 @@ function Login() {
 
     try {
       // 2. Ensuite, faire la requête de connexion avec le token CSRF
-      const response = await fetch(`${config.test.baseUrl}api/users/login`, {
+      const response = await fetch(`${config.test.baseUrl}api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

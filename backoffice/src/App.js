@@ -10,6 +10,7 @@ import PlaylistsCrud from './components/playlist/playlist';
 import TracksCrudB from './components/tracks/tracks2.0';
 import PrivateRoute from './PrivateRoute'; // Importer PrivateRoute
 import Navbar from './components/navbar';
+import SearchResults from './components/SearchResult';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           }
         />
         <Route path="*" element={<h1>404 - Page non trouvée</h1>} />
+        <Route path="/search" element={<SearchResults />} />
         <Route
           path="/artists"
           element={

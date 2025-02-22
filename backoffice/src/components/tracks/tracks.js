@@ -1,24 +1,29 @@
 import { useEffect, useState } from 'react';
 
-const API_URL = 'http://localhost:3001/api/tracks';
+const API_URL = 'http://localhost:3001/api/audio';
+const API_URL_TRACKS = 'http://localhost:3001/api/tracks';
 const API_ARTISTS_URL = 'http://localhost:3001/api/artists';
+const API_ALBUMS_URL = 'http://localhost:3001/api/albums';
 
 export default function TracksCrud() {
   const [tracks, setTracks] = useState([]);
   const [artists, setArtists] = useState([]);
+  const [albums, setAlbums] = useState([]);
   const [title, setTitle] = useState('');
-  const [duration, setDuration] = useState('');
   const [artistId, setArtistId] = useState('');
+  const [albumId, setAlbumId] = useState('');
+  const [file, setFile] = useState(null);
   const [idEdit, setIdEdit] = useState(null);
 
   useEffect(() => {
     fetchTracks();
     fetchArtists();
+    fetchAlbums();
   }, []);
 
   async function fetchTracks() {
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(API_URL_TRACKS);
       const data = await response.json();
       setTracks(data);
     } catch (error) {
@@ -36,22 +41,47 @@ export default function TracksCrud() {
     }
   }
 
-  async function handleSubmit() {
-    if (!title.trim() || !duration.trim() || !artistId) return;
+  async function fetchAlbums() {
+    try {
+      const response = await fetch(API_ALBUMS_URL);
+      const data = await response.json();
+      setAlbums(data);
+    } catch (error) {
+      console.error('Erreur de récupération des albums :', error);
+    }
+  }
 
-    const payload = { title, duration, artist: artistId };
-    const method = idEdit ? 'PUT' : 'POST';
-    const url = idEdit ? `${API_URL}/${idEdit}` : API_URL;
+  async function handleSubmit() {
+    if (!title.trim() || !artistId || !albumId || (!idEdit && !file)) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('Token d\'authentification non trouvé');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('artistId', artistId);
+    formData.append('albumId', albumId);
+    if (file) formData.append('audio', file);
+
+    const method = idEdit ? 'PATCH' : 'POST';
+    const url = idEdit ? `${API_URL}/${idEdit}` : `${API_URL}/upload`;
 
     const response = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData,
     });
 
     if (response.ok) {
       fetchTracks();
       resetForm();
+    } else {
+      console.error('Erreur lors de l\'envoi du fichier.');
     }
   }
 
@@ -64,15 +94,16 @@ export default function TracksCrud() {
 
   function handleEdit(track) {
     setTitle(track.title);
-    setDuration(track.duration);
     setArtistId(track.artist._id);
+    setAlbumId(track.album._id);
     setIdEdit(track._id);
   }
 
   function resetForm() {
     setTitle('');
-    setDuration('');
     setArtistId('');
+    setAlbumId('');
+    setFile(null);
     setIdEdit(null);
   }
 
@@ -87,13 +118,6 @@ export default function TracksCrud() {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Titre du morceau"
         />
-        <input
-          type="text"
-          className="border p-2 w-full rounded mb-2"
-          value={duration}
-          onChange={(e) => setDuration(e.target.value)}
-          placeholder="Durée (en secondes)"
-        />
         <select
           className="border p-2 w-full rounded mb-2"
           value={artistId}
@@ -106,6 +130,26 @@ export default function TracksCrud() {
             </option>
           ))}
         </select>
+        <select
+          className="border p-2 w-full rounded mb-2"
+          value={albumId}
+          onChange={(e) => setAlbumId(e.target.value)}
+        >
+          <option value="">Sélectionner un album</option>
+          {albums.map((album) => (
+            <option key={album._id} value={album._id}>
+              {album.title}
+            </option>
+          ))}
+        </select>
+        {!idEdit && (
+          <input
+            type="file"
+            accept="audio/*"
+            className="border p-2 w-full rounded mb-2"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+        )}
         <button
           onClick={handleSubmit}
           className="bg-blue-500 text-white px-4 py-2 rounded w-full"
@@ -122,10 +166,13 @@ export default function TracksCrud() {
             <div>
               <p className="font-semibold">{track.title}</p>
               <p className="text-sm text-gray-600">
-                Durée: {track.duration} sec
+                Durée: {track.duration ? `${track.duration} sec` : 'Non disponible'}
               </p>
               <p className="text-sm text-gray-500">
-                Artiste: {track.artist.name}
+                Artiste: {track.artist?.name}
+              </p>
+              <p className="text-sm text-gray-500">
+                Album: {track.album?.title}
               </p>
             </div>
             <div>

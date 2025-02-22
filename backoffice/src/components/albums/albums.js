@@ -1,165 +1,116 @@
 import { useEffect, useState } from 'react';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, arrayMove, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const API_URL = 'http://localhost:3001/api/albums';
-const API_ARTISTS_URL = 'http://localhost:3001/api/artists';
+
+function TrackItem({ track, index }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: track._id });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <li ref={setNodeRef} style={style} {...attributes} {...listeners} className="p-2 bg-gray-200 rounded flex justify-between items-center">
+      <span>{index + 1}. {track.title}</span>
+      <button className="text-red-500" onClick={() => track.onDelete(track._id)}>❌</button>
+    </li>
+  );
+}
 
 export default function AlbumsCrud() {
   const [albums, setAlbums] = useState([]);
-  const [artists, setArtists] = useState([]);
-  const [title, setTitle] = useState('');
-  const [genre, setGenre] = useState('');
-  const [releaseDate, setReleaseDate] = useState('');
-  const [artistId, setArtistId] = useState('');
-  const [idEdit, setIdEdit] = useState(null);
+  const [tracks, setTracks] = useState([]);
+  const [newTrack, setNewTrack] = useState('');
+  const [selectedAlbum, setSelectedAlbum] = useState(null);
 
   useEffect(() => {
     fetchAlbums();
-    fetchArtists();
   }, []);
 
   async function fetchAlbums() {
-    try {
-      const response = await fetch(API_URL);
-      const data = await response.json();
-      setAlbums(data);
-    } catch (error) {
-      console.error('Erreur de récupération des albums :', error);
-    }
+    const response = await fetch(API_URL);
+    const data = await response.json();
+    setAlbums(data);
   }
 
-  async function fetchArtists() {
-    try {
-      const response = await fetch(API_ARTISTS_URL);
-      const data = await response.json();
-      setArtists(data);
-    } catch (error) {
-      console.error('Erreur de récupération des artistes :', error);
-    }
+  async function fetchTracks(albumId) {
+    const response = await fetch(`${API_URL}/${albumId}/tracks`);
+    const data = await response.json();
+    setTracks(data);
+    setSelectedAlbum(albumId);
   }
 
-  async function handleSubmit() {
-    if (!title.trim() || !genre.trim() || !releaseDate || !artistId) return;
-
-    const payload = { title, genre, releaseDate, artist: artistId };
-    const method = idEdit ? 'PUT' : 'POST';
-    const url = idEdit ? `${API_URL}/${idEdit}` : API_URL;
-
-    const response = await fetch(url, {
-      method,
+  async function addTrack() {
+    if (!newTrack.trim()) return;
+    const response = await fetch(`${API_URL}/${selectedAlbum}/tracks`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ title: newTrack })
     });
-
     if (response.ok) {
-      fetchAlbums();
-      resetForm();
+      setNewTrack('');
+      fetchTracks(selectedAlbum);
     }
   }
 
-  async function deleteAlbum(id) {
-    if (window.confirm('Voulez-vous vraiment supprimer cet album ?')) {
-      const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-      if (response.ok) fetchAlbums();
-    }
+  async function deleteTrack(trackId) {
+    const response = await fetch(`${API_URL}/${selectedAlbum}/tracks/${trackId}`, { method: 'DELETE' });
+    if (response.ok) fetchTracks(selectedAlbum);
   }
 
-  function handleEdit(album) {
-    setTitle(album.title);
-    setGenre(album.genre);
-    setReleaseDate(album.releaseDate.split('T')[0]);
-    setArtistId(album.artist._id);
-    setIdEdit(album._id);
+  async function updateTrackOrder(updatedTracks) {
+    await fetch(`${API_URL}/${selectedAlbum}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tracks: updatedTracks.map((t, index) => ({ id: t._id, order: index })) })
+    });
   }
 
-  function resetForm() {
-    setTitle('');
-    setGenre('');
-    setReleaseDate('');
-    setArtistId('');
-    setIdEdit(null);
+  function handleDragEnd(event) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = tracks.findIndex(t => t._id === active.id);
+    const newIndex = tracks.findIndex(t => t._id === over.id);
+    const newOrder = arrayMove(tracks, oldIndex, newIndex);
+    setTracks(newOrder);
+    updateTrackOrder(newOrder);
   }
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-10">
       <h2 className="text-2xl font-bold mb-4">Gestion des Albums</h2>
-      <div className="mb-4">
-        <input
-          type="text"
-          className="border p-2 w-full rounded mb-2"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Titre de l'album"
-        />
-        <input
-          type="text"
-          className="border p-2 w-full rounded mb-2"
-          value={genre}
-          onChange={(e) => setGenre(e.target.value)}
-          placeholder="Genre"
-        />
-        <input
-          type="date"
-          className="border p-2 w-full rounded mb-2"
-          value={releaseDate}
-          onChange={(e) => setReleaseDate(e.target.value)}
-        />
-        <select
-          className="border p-2 w-full rounded mb-2"
-          value={artistId}
-          onChange={(e) => setArtistId(e.target.value)}
-        >
-          <option value="">Sélectionner un artiste</option>
-          {artists.map((artist) => (
-            <option key={artist._id} value={artist._id}>
-              {artist.name}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={handleSubmit}
-          className="bg-blue-500 text-white px-4 py-2 rounded w-full"
-        >
-          {idEdit ? 'Modifier' : 'Ajouter'}
-        </button>
-      </div>
-      <ul className="space-y-4">
-        {albums.map((album) => (
-          <li
-            key={album._id}
-            className="p-4 bg-gray-100 rounded-lg flex justify-between items-center"
-          >
-            <div>
-              <img
-                src={album.images.thumbnail}
-                alt={album.title}
-                className="w-16 h-16 rounded-lg mr-4"
-              />
-              <p className="font-semibold">{album.title}</p>
-              <p className="text-sm text-gray-600">
-                Genre: {album.genre} | Artiste: {album.artist.name}
-              </p>
-              <p className="text-sm text-gray-500">
-                Date de sortie:{' '}
-                {new Date(album.releaseDate).toLocaleDateString()}
-              </p>
-            </div>
-            <div>
-              <button
-                onClick={() => handleEdit(album)}
-                className="text-blue-500 mr-2"
-              >
-                ✏️
-              </button>
-              <button
-                onClick={() => deleteAlbum(album._id)}
-                className="text-red-500"
-              >
-                ❌
-              </button>
-            </div>
+      <ul>
+        {albums.map(album => (
+          <li key={album._id} className="p-2 bg-gray-100 rounded flex justify-between items-center cursor-pointer" onClick={() => fetchTracks(album._id)}>
+            {album.title}
           </li>
         ))}
       </ul>
+      {selectedAlbum && (
+        <div className="mt-4">
+          <h3 className="text-xl font-bold">Pistes de l'album</h3>
+          <input type="text" value={newTrack} onChange={(e) => setNewTrack(e.target.value)} placeholder="Nouvelle piste" className="border p-2 w-full rounded mt-2" />
+          <button onClick={addTrack} className="bg-blue-500 text-white px-4 py-2 rounded mt-2">Ajouter</button>
+          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={tracks.map(t => t._id)}>
+              <ul className="mt-4 space-y-2">
+                {tracks.map((track, index) => (
+                  <TrackItem 
+                    key={track._id}
+                    track={{ ...track, onDelete: deleteTrack }}
+                    index={index}
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
+        </div>
+      )}
     </div>
   );
 }
