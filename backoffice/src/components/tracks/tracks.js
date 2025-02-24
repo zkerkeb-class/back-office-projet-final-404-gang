@@ -56,7 +56,7 @@ export default function TracksCrud() {
 
     const token = localStorage.getItem('token');
     if (!token) {
-      console.error('Token d\'authentification non trouvé');
+      console.error("Token d'authentification non trouvé");
       return;
     }
 
@@ -72,7 +72,7 @@ export default function TracksCrud() {
     const response = await fetch(url, {
       method,
       headers: {
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
       body: formData,
     });
@@ -81,7 +81,7 @@ export default function TracksCrud() {
       fetchTracks();
       resetForm();
     } else {
-      console.error('Erreur lors de l\'envoi du fichier.');
+      console.error("Erreur lors de l'envoi du fichier.");
     }
   }
 
@@ -166,7 +166,8 @@ export default function TracksCrud() {
             <div>
               <p className="font-semibold">{track.title}</p>
               <p className="text-sm text-gray-600">
-                Durée: {track.duration ? `${track.duration} sec` : 'Non disponible'}
+                Durée:{' '}
+                {track.duration ? `${track.duration} sec` : 'Non disponible'}
               </p>
               <p className="text-sm text-gray-500">
                 Artiste: {track.artist?.name}

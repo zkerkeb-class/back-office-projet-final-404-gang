@@ -6,17 +6,31 @@ import { CSS } from '@dnd-kit/utilities';
 const API_URL = 'http://localhost:3001/api/albums';
 
 function TrackItem({ track, index }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: track._id });
-  
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: track._id });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
   return (
-    <li ref={setNodeRef} style={style} {...attributes} {...listeners} className="p-2 bg-gray-200 rounded flex justify-between items-center">
-      <span>{index + 1}. {track.title}</span>
-      <button className="text-red-500" onClick={() => track.onDelete(track._id)}>❌</button>
+    <li
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="p-2 bg-gray-200 rounded flex justify-between items-center"
+    >
+      <span>
+        {index + 1}. {track.title}
+      </span>
+      <button
+        className="text-red-500"
+        onClick={() => track.onDelete(track._id)}
+      >
+        ❌
+      </button>
     </li>
   );
 }
@@ -49,7 +63,7 @@ export default function AlbumsCrud() {
     const response = await fetch(`${API_URL}/${selectedAlbum}/tracks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newTrack })
+      body: JSON.stringify({ title: newTrack }),
     });
     if (response.ok) {
       setNewTrack('');
@@ -58,7 +72,10 @@ export default function AlbumsCrud() {
   }
 
   async function deleteTrack(trackId) {
-    const response = await fetch(`${API_URL}/${selectedAlbum}/tracks/${trackId}`, { method: 'DELETE' });
+    const response = await fetch(
+      `${API_URL}/${selectedAlbum}/tracks/${trackId}`,
+      { method: 'DELETE' },
+    );
     if (response.ok) fetchTracks(selectedAlbum);
   }
 
@@ -66,7 +83,9 @@ export default function AlbumsCrud() {
     await fetch(`${API_URL}/${selectedAlbum}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tracks: updatedTracks.map((t, index) => ({ id: t._id, order: index })) })
+      body: JSON.stringify({
+        tracks: updatedTracks.map((t, index) => ({ id: t._id, order: index })),
+      }),
     });
   }
 
@@ -74,8 +93,8 @@ export default function AlbumsCrud() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = tracks.findIndex(t => t._id === active.id);
-    const newIndex = tracks.findIndex(t => t._id === over.id);
+    const oldIndex = tracks.findIndex((t) => t._id === active.id);
+    const newIndex = tracks.findIndex((t) => t._id === over.id);
     const newOrder = arrayMove(tracks, oldIndex, newIndex);
     setTracks(newOrder);
     updateTrackOrder(newOrder);
@@ -85,8 +104,12 @@ export default function AlbumsCrud() {
     <div className="max-w-2xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-10">
       <h2 className="text-2xl font-bold mb-4">Gestion des Albums</h2>
       <ul>
-        {albums.map(album => (
-          <li key={album._id} className="p-2 bg-gray-100 rounded flex justify-between items-center cursor-pointer" onClick={() => fetchTracks(album._id)}>
+        {albums.map((album) => (
+          <li
+            key={album._id}
+            className="p-2 bg-gray-100 rounded flex justify-between items-center cursor-pointer"
+            onClick={() => fetchTracks(album._id)}
+          >
             {album.title}
           </li>
         ))}
@@ -94,13 +117,27 @@ export default function AlbumsCrud() {
       {selectedAlbum && (
         <div className="mt-4">
           <h3 className="text-xl font-bold">Pistes de l'album</h3>
-          <input type="text" value={newTrack} onChange={(e) => setNewTrack(e.target.value)} placeholder="Nouvelle piste" className="border p-2 w-full rounded mt-2" />
-          <button onClick={addTrack} className="bg-blue-500 text-white px-4 py-2 rounded mt-2">Ajouter</button>
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={tracks.map(t => t._id)}>
+          <input
+            type="text"
+            value={newTrack}
+            onChange={(e) => setNewTrack(e.target.value)}
+            placeholder="Nouvelle piste"
+            className="border p-2 w-full rounded mt-2"
+          />
+          <button
+            onClick={addTrack}
+            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+          >
+            Ajouter
+          </button>
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={tracks.map((t) => t._id)}>
               <ul className="mt-4 space-y-2">
                 {tracks.map((track, index) => (
-                  <TrackItem 
+                  <TrackItem
                     key={track._id}
                     track={{ ...track, onDelete: deleteTrack }}
                     index={index}
